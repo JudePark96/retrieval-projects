@@ -3,24 +3,17 @@ import PIL.Image
 import torchvision.transforms.functional as F
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 
+# PIL.Image.MAX_IMAGE_PIXELS = None
 
-def _convert_image_to_rgb(image):
+
+def _convert_image_to_rgb(image: PIL.Image):
   return image.convert("RGB")
 
 
 class SquarePad:
-  """
-  Square pad the input image with zero padding
-  """
-  
   def __init__(self, size: int):
-    """
-    For having a consistent preprocess pipeline with CLIP we need to have the preprocessing output dimension as
-    a parameter
-    :param size: preprocessing output dimension
-    """
     self.size = size
-  
+
   def __call__(self, image):
     w, h = image.size
     max_wh = max(w, h)
@@ -31,19 +24,10 @@ class SquarePad:
 
 
 class TargetPad:
-  """
-  Pad the image if its aspect ratio is above a target ratio.
-  Pad the image to match such target ratio
-  """
-  
   def __init__(self, target_ratio: float, size: int):
-    """
-    :param target_ratio: target ratio
-    :param size: preprocessing output dimension
-    """
     self.size = size
     self.target_ratio = target_ratio
-  
+
   def __call__(self, image):
     w, h = image.size
     actual_ratio = max(w, h) / min(w, h)
@@ -57,11 +41,6 @@ class TargetPad:
 
 
 def squarepad_transform(dim: int):
-  """
-  CLIP-like preprocessing transform on a square padded image
-  :param dim: image output dimension
-  :return: CLIP-like torchvision Compose transform
-  """
   return Compose([
     SquarePad(dim),
     Resize(dim, interpolation=PIL.Image.BICUBIC),
@@ -73,15 +52,9 @@ def squarepad_transform(dim: int):
 
 
 def targetpad_transform(target_ratio: float, dim: int):
-  """
-  CLIP-like preprocessing transform computed after using TargetPad pad
-  :param target_ratio: target ratio for TargetPad
-  :param dim: image output dimension
-  :return: CLIP-like torchvision Compose transform
-  """
   return Compose([
     TargetPad(target_ratio, dim),
-    Resize(dim, interpolation=F.InterpolationMode.BICUBIC),
+    Resize(dim, interpolation=PIL.Image.BICUBIC),
     CenterCrop(dim),
     _convert_image_to_rgb,
     ToTensor(),

@@ -1,4 +1,3 @@
-import logging
 from typing import Union
 
 import numpy as np
@@ -8,22 +7,24 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from src.config import BaseConfig, BaselineConfig
-from src.data_utils.cirr_dataset import ImageIndexingDataset, CIRRDataset
+from test2 import ImageIndexingDataset, CIRRDataset
 from src.model.modules.opts import element_wise_sum
 from src.third_party import clip
 from src.utils.constants import LOGGER
-from src.utils.transforms import targetpad_transform
+from src.utils.transforms import squarepad_transform
 
 
 @torch.no_grad()
 def zero_shot_eval_main(config: Union[BaseConfig, BaselineConfig]) -> None:
   device = 'cuda' if torch.cuda.is_available() else 'cpu'
-  clip_model, clip_preprocess = clip.load(config.clip_model_name, device=device, jit=False)
+  clip_model, preprocess = clip.load(config.clip_model_name, device=device, jit=False)
   clip_model = clip_model.to(device)
   clip_model.eval()
 
   input_dim = clip_model.visual.input_resolution
-  preprocess = targetpad_transform(1.25, input_dim)
+  LOGGER.info(input_dim)
+  # preprocess = targetpad_transform(1.25, input_dim)
+  preprocess = squarepad_transform(input_dim)
 
   index_dataset = ImageIndexingDataset(config, 'val', preprocess)
   index_dataloader = DataLoader(index_dataset, batch_size=256, pin_memory=True, num_workers=48, shuffle=False)
@@ -107,6 +108,7 @@ def zero_shot_eval_main(config: Union[BaseConfig, BaselineConfig]) -> None:
   LOGGER.info(f'Group Recall@3: {group_recall_at3}')
 
   """
+  TargetPad
   2023-06-18T00:10:46.928+09:00 |     INFO | evaluation.py:106 | evaluation | zero_shot_eval_main |> Recall@1: 22.052140533924103 
   2023-06-18T00:10:46.928+09:00 |     INFO | evaluation.py:107 | evaluation | zero_shot_eval_main |> Recall@5: 51.925379037857056 
   2023-06-18T00:10:46.928+09:00 |     INFO | evaluation.py:108 | evaluation | zero_shot_eval_main |> Recall@10: 66.01291298866272 
@@ -116,6 +118,27 @@ def zero_shot_eval_main(config: Union[BaseConfig, BaselineConfig]) -> None:
   2023-06-18T00:10:46.928+09:00 |     INFO | evaluation.py:112 | evaluation | zero_shot_eval_main |> Group Recall@3: 86.98875904083252 
   """
 
+  """
+  SquarePad
+  2023-06-18T02:02:42.547+09:00 |     INFO | evaluation.py:102 | evaluation | zero_shot_eval_main |> Recall@1: 22.4348247051239 
+  2023-06-18T02:02:42.548+09:00 |     INFO | evaluation.py:103 | evaluation | zero_shot_eval_main |> Recall@5: 51.71011686325073 
+  2023-06-18T02:02:42.548+09:00 |     INFO | evaluation.py:104 | evaluation | zero_shot_eval_main |> Recall@10: 65.0562047958374 
+  2023-06-18T02:02:42.548+09:00 |     INFO | evaluation.py:105 | evaluation | zero_shot_eval_main |> Recall@50: 87.46711015701294 
+  2023-06-18T02:02:42.548+09:00 |     INFO | evaluation.py:106 | evaluation | zero_shot_eval_main |> Group Recall@1: 52.6189923286438 
+  2023-06-18T02:02:42.548+09:00 |     INFO | evaluation.py:107 | evaluation | zero_shot_eval_main |> Group Recall@2: 74.168860912323 
+  2023-06-18T02:02:42.548+09:00 |     INFO | evaluation.py:108 | evaluation | zero_shot_eval_main |> Group Recall@3: 86.22339367866516 
+  """
+
+  """
+  CLIP
+  2023-06-18T01:53:24.310+09:00 |     INFO | evaluation.py:101 | evaluation | zero_shot_eval_main |> Recall@1: 21.669456362724304 
+  2023-06-18T01:53:24.310+09:00 |     INFO | evaluation.py:102 | evaluation | zero_shot_eval_main |> Recall@5: 50.87299942970276 
+  2023-06-18T01:53:24.310+09:00 |     INFO | evaluation.py:103 | evaluation | zero_shot_eval_main |> Recall@10: 65.39105772972107 
+  2023-06-18T01:53:24.310+09:00 |     INFO | evaluation.py:104 | evaluation | zero_shot_eval_main |> Recall@50: 87.61062026023865 
+  2023-06-18T01:53:24.310+09:00 |     INFO | evaluation.py:105 | evaluation | zero_shot_eval_main |> Group Recall@1: 51.327431201934814 
+  2023-06-18T01:53:24.310+09:00 |     INFO | evaluation.py:106 | evaluation | zero_shot_eval_main |> Group Recall@2: 72.44678139686584 
+  2023-06-18T01:53:24.310+09:00 |     INFO | evaluation.py:107 | evaluation | zero_shot_eval_main |> Group Recall@3: 85.98421216011047 
+  """
 
 if __name__ == '__main__':
   config = BaselineConfig()

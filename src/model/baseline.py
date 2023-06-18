@@ -1,5 +1,5 @@
 import logging
-from typing import Union
+from typing import Union, Dict
 
 import torch
 import torch.nn as nn
@@ -32,7 +32,7 @@ class BaselineModel(Base):
     input_ids: torch.Tensor,
     reference_feats: torch.Tensor,
     target_feats: torch.Tensor,
-  ) -> torch.Tensor:
+  ) -> Dict[str, torch.Tensor]:
     text_features = self.generate_embedding(input_ids, 'text')
     reference_features = self.generate_embedding(reference_feats, embed_type='image')
     target_features = F.normalize(self.generate_embedding(target_feats, embed_type='image'))
@@ -43,7 +43,9 @@ class BaselineModel(Base):
 
     ground_truth = torch.arange(images_in_batch, dtype=torch.long, device=text_features.device)
     loss = self.loss_fn(logits, ground_truth)
-    return loss
+    return {
+      'loss': loss
+    }
 
   def generate_embedding(
     self,
@@ -56,3 +58,8 @@ class BaselineModel(Base):
       return self.backbone.encode_image(input_tensor)
     else:
       raise ValueError(f"This doesn't support embed_type: {embed_type}")
+
+  def fetch_top_k_from_datastore(self):
+    pass
+
+
