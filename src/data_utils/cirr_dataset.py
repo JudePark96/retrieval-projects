@@ -10,6 +10,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from tqdm import tqdm
 
+from src.config import BaselineConfig
+from src.model.baseline import BaselineModel
 from src.third_party import clip
 from src.utils.constants import LOGGER
 
@@ -108,7 +110,6 @@ class ImageIndexingDataset(Base):
 
   def __len__(self) -> int:
     return len(self.name_to_relpath)
-    pass
 
 
 class CIRRDataset(Dataset):
@@ -148,7 +149,7 @@ class CIRRDataset(Dataset):
         return {
           'reference_image': reference_image,
           'target_image': target_image,
-          'caption': clip.tokenize(rel_caption, context_length=77, truncate=True)
+          'caption': clip.tokenize(rel_caption, context_length=77, truncate=True).type(torch.LongTensor)
         }
 
       elif self.split == 'val':
@@ -180,22 +181,22 @@ class CIRRDataset(Dataset):
 
 
 if __name__ == '__main__':
-  from src.utils.transforms import targetpad_transform
+  # from src.utils.transforms import targetpad_transform
 
   preprocess = targetpad_transform(1.25, 288)
+  config = BaselineConfig()
+  model, _ =  clip.load(config.clip_model_name)
+  model = BaselineModel(config, model)
 
-  # train_dataset = CIRRDataset('train', preprocess)
-  # train_dataloader = DataLoader(train_dataset, batch_size=64,
-  #                               pin_memory=False, num_workers=8,
-  #                               drop_last=True, shuffle=True)
-  #
-  # for atch in tqdm(train_dataloader):
-  #   pass
-
-  train_dataset = CIRRDataset('val', preprocess)
+  train_dataset = CIRRDataset('train', preprocess)
   train_dataloader = DataLoader(train_dataset, batch_size=64,
                                 pin_memory=False, num_workers=8,
                                 drop_last=True, shuffle=True)
+  model.cuda()
 
-  for atch in tqdm(train_dataloader):
+  for batch in tqdm(train_dataloader):
+    batch = {k: (v.to(torch.device('cuda'), non_blocking=True) if isinstance(v, torch.Tensor) else v) for k, v in batch.items()}
+    model_output = model(input_ids=batch['caption'].squeeze(dim=1), reference_feats=batch['reference_image'],
+                         target_feats=batch['target_image'])
+    model_output['loss'].backward()
     pass

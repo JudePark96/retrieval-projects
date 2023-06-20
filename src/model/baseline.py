@@ -38,7 +38,7 @@ class BaselineModel(Base):
     target_features = F.normalize(self.generate_embedding(target_feats, embed_type='image'))
 
     predicted_features = element_wise_sum(reference_features, text_features)
-    logits = self.logit_scale * predicted_features @ target_features.T
+    logits = 100 * predicted_features @ target_features.T
     images_in_batch = reference_features.size(0)
 
     ground_truth = torch.arange(images_in_batch, dtype=torch.long, device=text_features.device)

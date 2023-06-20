@@ -21,10 +21,14 @@ class BaseConfig:
 
 @dataclass()
 class BaselineConfig(BaseConfig):
+  # wandb
+  project_name: str = 'llm-cirr-retrieval'
+  logging_per_step: int = 10
+
   seed: Optional[int] = 13
   model_type: Optional[str] = 'baseline'
   preprocess_func: Optional[str] = 'targetpad'  # [squarepad, targetpad, clip]
-  torch_dtype: Optional[int] = 'fp32'
+  torch_dtype: Optional[int] = 'fp16'
   run_predict: Optional[bool] = False
 
   learning_rate: Optional[float] = 2e-5
@@ -33,7 +37,7 @@ class BaselineConfig(BaseConfig):
   weight_decay: Optional[float] = 0.01
   warmup_proportion: Optional[float] = 0.06
 
-  num_train_epochs: Optional[int] = 50
+  num_train_epochs: Optional[int] = 30
   gradient_accumulation_steps: Optional[int] = 1
 
   index_batch_size: Optional[int] = 16  # This is the batch size for indexing embedding.
